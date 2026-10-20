@@ -8,7 +8,7 @@
 [![PySpark](https://img.shields.io/badge/Apache%20Spark-3.5-E25A1C?logo=apachespark&logoColor=white)](https://spark.apache.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.66-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
 
-A modern, serverless **Data Lakehouse** (Medallion Architecture: Bronze &rarr; Silver &rarr; Gold) engineered with the **Ponytail Philosophy** (lean, zero-overengineering, zero-burn cloud compute cost). JOSE tracks the Indonesian tech employment landscape from leading portals (Glints, JobStreet), extracts in-demand tech skills, maps them to curated YouTube tutorials, and visualizes them on a high-taste dark glassmorphism dashboard.
+A modern, serverless **Data Lakehouse** (Medallion Architecture: Bronze &rarr; Silver &rarr; Gold) engineered with the **Clean Philosophy** (lean, zero-overengineering, zero-burn cloud compute cost). JOSE tracks the Indonesian tech employment landscape from leading portals (Glints, JobStreet), extracts in-demand tech skills, maps them to curated YouTube tutorials, and visualizes them on a high-taste dark glassmorphism dashboard.
 
 ---
 
