@@ -1,0 +1,10 @@
+dbt_lakehouse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: 'data/gold/lakehouse.duckdb'
+      threads: 4
+      extensions:
+        - parquet
+        - httpfs

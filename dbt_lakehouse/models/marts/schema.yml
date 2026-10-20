@@ -1,0 +1,71 @@
+version: 2
+
+models:
+  - name: dim_companies
+    description: "SCD Type 2 tracked company dimension."
+    columns:
+      - name: company_key
+        description: "Surrogate key derived from company name and valid_from timestamp."
+        tests:
+          - unique
+          - not_null
+      - name: company_name
+        description: "Normalized company name."
+        tests:
+          - not_null
+
+  - name: dim_skills
+    description: "Master technical skills dimension."
+    columns:
+      - name: skill_key
+        description: "MD5 hash of skill name."
+        tests:
+          - unique
+          - not_null
+      - name: skill_name
+        description: "Normalized skill name."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_youtube_videos
+    description: "Curated YouTube tutorial video dimension."
+    columns:
+      - name: video_key
+        description: "Surrogate key derived from YouTube video_id."
+        tests:
+          - unique
+          - not_null
+      - name: video_id
+        description: "YouTube video ID."
+        tests:
+          - not_null
+
+  - name: fact_job_postings
+    description: "Central fact table storing all scraped IT job postings."
+    columns:
+      - name: job_key
+        description: "Surrogate key for the job posting."
+        tests:
+          - unique
+          - not_null
+      - name: job_id
+        description: "Source portal natural ID."
+        tests:
+          - not_null
+      - name: role_category
+        description: "Standardized role category."
+        tests:
+          - not_null
+
+  - name: bridge_job_skills
+    description: "Many-to-Many bridge table between job postings and skills."
+    columns:
+      - name: job_key
+        description: "Foreign key to fact_job_postings."
+        tests:
+          - not_null
+      - name: skill_key
+        description: "Foreign key to dim_skills."
+        tests:
+          - not_null

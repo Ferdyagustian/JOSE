@@ -1,0 +1,27 @@
+# Data Contracts & Settings
+pydantic>=2.7.0
+pydantic-settings>=2.2.0
+python-dotenv>=1.0.1
+azure-storage-blob>=12.19.0
+
+# Web Scraping & Ingestion
+curl_cffi>=0.7.0
+google-api-python-client>=2.120.0
+
+# Big Data Processing & Lakehouse (Silver Layer)
+pyspark==3.5.1
+delta-spark==3.2.0
+
+# Data Warehousing & Modeling (Gold Layer)
+duckdb>=1.0.0
+dbt-core>=1.8.0
+dbt-duckdb>=1.8.0
+
+# BI Dashboard & Visualizations
+streamlit>=1.35.0
+plotly>=5.22.0
+
+# Testing & Code Quality
+pytest>=8.2.0
+pytest-mock>=3.14.0
+ruff>=0.4.0

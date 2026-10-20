@@ -1,0 +1,83 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables
+.env
+.env.local
+
+# Spark & Delta Lake
+metastore_db/
+derby.log
+spark-warehouse/
+.delta/
+*.checkpoint.parquet
+
+# DuckDB & dbt
+*.duckdb.wal
+dbt_lakehouse/target/
+dbt_lakehouse/dbt_packages/
+dbt_lakehouse/logs/
+dbt_lakehouse/.user.yml
+
+# Data Lakehouse (Bronze & Silver are generated raw/intermediate; Gold is tracked for Streamlit Cloud)
+data/bronze/
+data/silver/
+*.parquet
+*.csv
+*.jsonl
+*.checkpoint.parquet
+!data/gold/lakehouse.duckdb
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/*.tfstate
+infra/*.tfstate.backup
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Caches & Scratch
+.pytest_cache/
+.ruff_cache/
+scratch/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
