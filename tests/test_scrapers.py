@@ -15,6 +15,7 @@ from src.ingestion.glints_scraper import GlintsScraper
 from src.ingestion.jobstreet_scraper import JobStreetScraper
 from src.ingestion.schemas import JobPostingRaw, YouTubeVideoRaw
 from src.ingestion.storage import (
+    download_bronze_from_azure,
     load_all_cached_youtube_skills,
     save_raw_jobs,
     save_raw_youtube_videos,
@@ -269,4 +270,38 @@ def test_upload_file_to_azure_configured(tmp_path: Path) -> None:
         result = upload_file_to_azure(dummy_file, "dummy.parquet", container_name="bronze")
         assert result is True
         mock_blob.upload_blob.assert_called_once()
+
+
+def test_download_bronze_from_azure_unconfigured(tmp_path: Path) -> None:
+    """Verify download_bronze_from_azure returns 0 when unconfigured."""
+    with patch("src.ingestion.storage.settings.azure_storage_connection_string", ""):
+        assert download_bronze_from_azure(target_dir=tmp_path) == 0
+
+
+def test_download_bronze_from_azure_configured(tmp_path: Path) -> None:
+    """Verify download_bronze_from_azure downloads blobs when configured."""
+    mock_client = MagicMock()
+    mock_container = MagicMock()
+    mock_blob_client = MagicMock()
+
+    mock_blob = MagicMock()
+    mock_blob.name = "jobs/source=glints/dt=2026-10-21/data.parquet"
+    mock_blob.size = 1234
+
+    mock_client.get_container_client.return_value = mock_container
+    mock_container.exists.return_value = True
+    mock_container.list_blobs.return_value = [mock_blob]
+    mock_container.get_blob_client.return_value = mock_blob_client
+    mock_blob_client.download_blob.return_value.readall.return_value = b"parquet-bytes"
+
+    with (
+        patch("src.ingestion.storage.settings.azure_storage_connection_string", "mock_conn"),
+        patch("azure.storage.blob.BlobServiceClient.from_connection_string", return_value=mock_client),
+    ):
+        count = download_bronze_from_azure(target_dir=tmp_path)
+        assert count == 1
+        downloaded_file = tmp_path / "bronze" / mock_blob.name
+        assert downloaded_file.exists()
+        assert downloaded_file.read_bytes() == b"parquet-bytes"
+
 

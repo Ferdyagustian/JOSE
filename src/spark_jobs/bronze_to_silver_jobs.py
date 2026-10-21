@@ -22,6 +22,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from src.config import settings
+from src.ingestion.storage import download_bronze_from_azure
 from src.spark_jobs.skill_extractor import extract_skills_for_record
 
 logger = logging.getLogger(__name__)
@@ -261,6 +262,21 @@ def clean_and_transform_job(record: dict[str, Any]) -> tuple[dict[str, Any], lis
     return clean_job, skills
 
 
+def _ensure_silver_parquet_exists(
+    jobs_parquet: Path,
+    skills_parquet: Path,
+    jobs_schema: pa.Schema,
+    skills_schema: pa.Schema,
+) -> None:
+    """Ensure Silver Delta parquet files exist so downstream dbt never fails."""
+    if not jobs_parquet.exists():
+        table_jobs = pa.Table.from_pylist([], schema=jobs_schema)
+        pq.write_table(table_jobs, jobs_parquet, compression="SNAPPY")
+    if not skills_parquet.exists():
+        table_skills = pa.Table.from_pylist([], schema=skills_schema)
+        pq.write_table(table_skills, skills_parquet, compression="SNAPPY")
+
+
 def run_silver_pipeline(
     base_dir: Path | str | None = None,
 ) -> dict[str, Any]:
@@ -276,40 +292,6 @@ def run_silver_pipeline(
         "silver_jobs_file": None,
         "silver_skills_file": None,
     }
-
-    if not bronze_jobs_dir.exists():
-        logger.warning("Bronze jobs directory does not exist: %s", bronze_jobs_dir)
-        return summary
-
-    parquet_files = list(bronze_jobs_dir.glob("**/*.parquet"))
-    if not parquet_files:
-        logger.info("No Bronze parquet files found to process.")
-        return summary
-
-    logger.info("Reading %d Bronze Parquet files via DuckDB...", len(parquet_files))
-    con = duckdb.connect(":memory:")
-    query = f"SELECT * FROM read_parquet('{bronze_jobs_dir}/**/*.parquet')"
-    bronze_df = con.execute(query).df()
-    con.close()
-
-    if bronze_df.empty:
-        logger.info("Bronze DataFrame is empty.")
-        return summary
-
-    # Transform and extract skills
-    clean_jobs_map: dict[str, dict[str, Any]] = {}
-    all_skills: list[dict[str, Any]] = []
-
-    for _, row in bronze_df.iterrows():
-        record = row.to_dict()
-        clean_job, skills = clean_and_transform_job(record)
-        # Deduplication by job_id (MERGE / Upsert behavior)
-        clean_jobs_map[clean_job["job_id"]] = clean_job
-        all_skills.extend(skills)
-
-    unique_jobs = list(clean_jobs_map.values())
-    summary["jobs_processed"] = len(unique_jobs)
-    summary["skills_extracted"] = len(all_skills)
 
     # Explicit PyArrow schemas to guarantee valid Parquet even with empty results
     jobs_schema = pa.schema(
@@ -342,18 +324,67 @@ def run_silver_pipeline(
         ]
     )
 
-    # Write Silver Jobs (delta_jobs)
     jobs_out_dir = silver_dir / "delta_jobs"
     jobs_out_dir.mkdir(parents=True, exist_ok=True)
     jobs_parquet = jobs_out_dir / "part-0000.parquet"
+
+    skills_out_dir = silver_dir / "delta_job_skills"
+    skills_out_dir.mkdir(parents=True, exist_ok=True)
+    skills_parquet = skills_out_dir / "part-0000.parquet"
+
+    # Sync Bronze partitions from Azure Blob Storage if configured (default pipeline only)
+    if base_dir is None and settings.is_azure_configured:
+        download_bronze_from_azure(data_dir)
+
+    if not bronze_jobs_dir.exists():
+        logger.warning("Bronze jobs directory does not exist: %s", bronze_jobs_dir)
+        _ensure_silver_parquet_exists(jobs_parquet, skills_parquet, jobs_schema, skills_schema)
+        summary["silver_jobs_file"] = str(jobs_parquet)
+        summary["silver_skills_file"] = str(skills_parquet)
+        return summary
+
+    parquet_files = list(bronze_jobs_dir.glob("**/*.parquet"))
+    if not parquet_files:
+        logger.info("No Bronze parquet files found to process.")
+        _ensure_silver_parquet_exists(jobs_parquet, skills_parquet, jobs_schema, skills_schema)
+        summary["silver_jobs_file"] = str(jobs_parquet)
+        summary["silver_skills_file"] = str(skills_parquet)
+        return summary
+
+    logger.info("Reading %d Bronze Parquet files via DuckDB...", len(parquet_files))
+    con = duckdb.connect(":memory:")
+    query = f"SELECT * FROM read_parquet('{bronze_jobs_dir}/**/*.parquet')"
+    bronze_df = con.execute(query).df()
+    con.close()
+
+    if bronze_df.empty:
+        logger.info("Bronze DataFrame is empty.")
+        _ensure_silver_parquet_exists(jobs_parquet, skills_parquet, jobs_schema, skills_schema)
+        summary["silver_jobs_file"] = str(jobs_parquet)
+        summary["silver_skills_file"] = str(skills_parquet)
+        return summary
+
+    # Transform and extract skills
+    clean_jobs_map: dict[str, dict[str, Any]] = {}
+    all_skills: list[dict[str, Any]] = []
+
+    for _, row in bronze_df.iterrows():
+        record = row.to_dict()
+        clean_job, skills = clean_and_transform_job(record)
+        # Deduplication by job_id (MERGE / Upsert behavior)
+        clean_jobs_map[clean_job["job_id"]] = clean_job
+        all_skills.extend(skills)
+
+    unique_jobs = list(clean_jobs_map.values())
+    summary["jobs_processed"] = len(unique_jobs)
+    summary["skills_extracted"] = len(all_skills)
+
+    # Write Silver Jobs (delta_jobs)
     table_jobs = pa.Table.from_pylist(unique_jobs, schema=jobs_schema)
     pq.write_table(table_jobs, jobs_parquet, compression="SNAPPY")
     summary["silver_jobs_file"] = str(jobs_parquet)
 
     # Write Silver Skills (delta_job_skills)
-    skills_out_dir = silver_dir / "delta_job_skills"
-    skills_out_dir.mkdir(parents=True, exist_ok=True)
-    skills_parquet = skills_out_dir / "part-0000.parquet"
     table_skills = pa.Table.from_pylist(all_skills, schema=skills_schema)
     pq.write_table(table_skills, skills_parquet, compression="SNAPPY")
     summary["silver_skills_file"] = str(skills_parquet)

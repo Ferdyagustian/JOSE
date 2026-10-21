@@ -95,6 +95,41 @@ def upload_file_to_azure(
         return False
 
 
+def download_bronze_from_azure(target_dir: Path | str | None = None) -> int:
+    """Download Bronze blobs from Azure Blob Storage to local directory if configured."""
+    if not settings.is_azure_configured:
+        return 0
+    try:
+        from azure.storage.blob import BlobServiceClient
+
+        base = Path(target_dir) if target_dir else get_base_data_dir()
+        service_client = BlobServiceClient.from_connection_string(
+            settings.azure_storage_connection_string
+        )
+        container_client = service_client.get_container_client(settings.bronze_container)
+        if not container_client.exists():
+            return 0
+
+        downloaded = 0
+        for blob in container_client.list_blobs():
+            # Skip empty folder markers in Azure
+            if blob.name.endswith("/") or blob.size == 0:
+                continue
+            dest = base / "bronze" / blob.name
+            if not dest.exists():
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                blob_client = container_client.get_blob_client(blob.name)
+                with open(dest, "wb") as f:
+                    data = blob_client.download_blob()
+                    f.write(data.readall())
+                downloaded += 1
+                logger.info("Downloaded %s from Azure Blob to %s", blob.name, dest)
+        return downloaded
+    except Exception as exc:
+        logger.warning("Failed to sync from Azure Blob: %s", exc)
+        return 0
+
+
 def save_raw_youtube_videos(
     videos: Sequence[YouTubeVideoRaw],
     base_dir: Path | str | None = None,

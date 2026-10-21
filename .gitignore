@@ -52,14 +52,14 @@ dbt_lakehouse/dbt_packages/
 dbt_lakehouse/logs/
 dbt_lakehouse/.user.yml
 
-# Data Lakehouse (Bronze & Silver are generated raw/intermediate; Gold is tracked for Streamlit Cloud)
-data/bronze/
-data/silver/
-*.parquet
+# Data Lakehouse (Baseline Lakehouse parquet & Gold duckdb tracked for CI/CD runner resilience)
 *.csv
 *.jsonl
 *.checkpoint.parquet
+*.parquet
 !data/gold/lakehouse.duckdb
+!data/silver/**/*.parquet
+!data/bronze/**/*.parquet
 
 # Terraform
 infra/.terraform/

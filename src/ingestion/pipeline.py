@@ -11,7 +11,7 @@ from typing import Any
 
 from src.ingestion.glints_scraper import run_glints_scraper
 from src.ingestion.jobstreet_scraper import run_jobstreet_scraper
-from src.ingestion.storage import save_raw_jobs
+from src.ingestion.storage import download_bronze_from_azure, save_raw_jobs
 from src.ingestion.youtube_fetcher import YouTubeFetcher
 
 logging.basicConfig(
@@ -35,6 +35,11 @@ def run_bronze_ingestion(
         "job_parquet_files": [],
         "youtube_parquet_file": None,
     }
+
+    # 0. Sync existing Bronze partitions from Azure Blob Storage if configured
+    downloaded = download_bronze_from_azure()
+    if downloaded:
+        logger.info("Synced %d Bronze files from Azure Storage.", downloaded)
 
     # 1. Scrape Glints
     logger.info("Fetching Glints jobs (target limit: %d)...", glints_limit)
