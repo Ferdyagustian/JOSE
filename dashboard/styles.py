@@ -35,45 +35,71 @@ html, body, [class*="css"] {
 header[data-testid="stHeader"], [data-testid="stHeader"] {
     background: transparent !important;
     background-color: transparent !important;
+    z-index: 999990 !important;
+}
+
+/* Ensure toolbar is visible so the expand button can render */
+[data-testid="stToolbar"] {
+    display: flex !important;
+    visibility: visible !important;
+    background: transparent !important;
 }
 
 /* Sidebar Toggle Controls - Always prominent & visible */
+[data-testid="stExpandSidebarButton"],
 [data-testid="stSidebarCollapsedControl"] {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
     position: fixed !important;
-    top: 12px !important;
-    left: 12px !important;
+    top: 14px !important;
+    left: 14px !important;
     z-index: 999999 !important;
     background: rgba(30, 41, 59, 0.95) !important;
     border: 1px solid rgba(99, 102, 241, 0.6) !important;
     border-radius: 8px !important;
     box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3) !important;
     cursor: pointer !important;
+    transition: all 0.2s ease !important;
 }
 
+[data-testid="stExpandSidebarButton"]:hover,
+[data-testid="stSidebarCollapsedControl"]:hover {
+    background: rgba(99, 102, 241, 0.35) !important;
+    border-color: #6366F1 !important;
+    box-shadow: 0 4px 18px rgba(99, 102, 241, 0.5) !important;
+    transform: translateY(-1px) !important;
+}
+
+[data-testid="stExpandSidebarButton"] svg,
 [data-testid="stSidebarCollapsedControl"] svg,
 [data-testid="stSidebarCollapseButton"] svg {
     fill: #F8FAFC !important;
     color: #F8FAFC !important;
+    stroke: #F8FAFC !important;
 }
 
-[data-testid="stSidebarCollapsedControl"]:hover {
+/* Collapse button inside open sidebar */
+[data-testid="stSidebarCollapseButton"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: rgba(30, 41, 59, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+}
+
+[data-testid="stSidebarCollapseButton"]:hover {
     background: rgba(99, 102, 241, 0.3) !important;
     border-color: #6366F1 !important;
 }
 
-[data-testid="stToolbar"] {
-    display: none !important;
-    visibility: hidden !important;
-}
-
-.stAppDeployButton {
-    display: none !important;
-}
-
-[data-testid="stDecoration"] {
+/* Hide clutter (deploy button, decoration, status widget) */
+.stAppDeployButton,
+[data-testid="stAppDeployButton"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"] {
     display: none !important;
 }
 
